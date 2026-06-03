@@ -1,0 +1,79 @@
+{
+  "$schema": "../../eval/schema/template.schema.json",
+  "id": "devcontainer-default",
+  "version": "1.0.0",
+  "runtime": "devcontainer",
+  "description": "Default devcontainer template for Energy local dev and CI environments. Zero-cost, VSCode/Codespaces compatible.",
+  "status": "active",
+
+  "compute": {
+    "cpu": 2,
+    "memoryMb": 2048,
+    "timeoutSeconds": 3600,
+    "estimatedHourlyCost": "$0 (local Docker) / ~$0.18/hr (Codespaces 2-core)"
+  },
+
+  "trustEnvelope": {
+    "allowNetworkEgress": true,
+    "allowedEgressDomains": ["registry.npmjs.org", "pypi.org", "github.com", "api.anthropic.com"],
+    "allowHostMounts": false,
+    "readOnlyMounts": [
+      { "hostPath": "${localWorkspaceFolder}", "containerPath": "/workspace", "readOnly": false }
+    ],
+    "secretSlots": ["ANTHROPIC_API_KEY", "E2B_API_KEY"],
+    "capDrop": ["NET_ADMIN", "SYS_ADMIN"],
+    "capAdd": [],
+    "notes": "Local-dev envelope: network allowed to known registries + Anthropic. Workspace mount is required for dev use. Secrets injected via .env (gitignored). Not suitable for running untrusted code."
+  },
+
+  "baseImage": {
+    "source": "mcr.microsoft.com/devcontainers/typescript-node",
+    "tag": "1-22",
+    "notes": "Microsoft maintained devcontainer base. Includes Node 22, TypeScript, pnpm, git."
+  },
+
+  "devcontainerJson": {
+    "name": "Energy Workspace",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22",
+    "features": {
+      "ghcr.io/devcontainers/features/python:1": { "version": "3.11" },
+      "ghcr.io/devcontainers/features/git:1": {}
+    },
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "esbenp.prettier-vscode",
+          "ms-python.python",
+          "bradlc.vscode-tailwindcss"
+        ],
+        "settings": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.formatOnSave": true
+        }
+      }
+    },
+    "postCreateCommand": "pnpm install",
+    "remoteUser": "node"
+  },
+
+  "preinstalledTools": [
+    { "name": "node", "version": "22", "required": true },
+    { "name": "pnpm", "version": ">=9", "required": true },
+    { "name": "python3", "version": "3.11", "required": false },
+    { "name": "git", "version": ">=2.40", "required": true }
+  ],
+
+  "usagePattern": "Long-lived dev environment (hours). Ideal for: local Energy harness dev, CI builds, Codespaces, VSCode remote containers.",
+
+  "widening": {
+    "additionalDomains": "Add to allowedEgressDomains; document reason in PR description",
+    "additionalSecrets": "Add named slot to secretSlots; bind via .env file (gitignored)",
+    "customFeatures": "Add devcontainer features — review for trust impact before adding"
+  },
+
+  "references": [
+    "energy/.claude/harnesses/INFRA-STACK.md",
+    "https://containers.dev/implementors/json_reference/",
+    "https://github.com/devcontainers/spec"
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "sandforge-template-v1",
+  "title": "Sandforge Template Schema v1",
+  "description": "JSON Schema for Sandforge sandbox template definitions. Every template.json must validate against this.",
+  "type": "object",
+  "required": ["id", "version", "runtime", "description", "status", "compute", "trustEnvelope", "preinstalledTools", "usagePattern", "references"],
+  "additionalProperties": true,
+
+  "properties": {
+    "$schema": { "type": "string" },
+
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Kebab-case template identifier. Must match the parent directory name."
+    },
+
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of this template definition."
+    },
+
+    "runtime": {
+      "type": "string",
+      "enum": ["e2b", "devcontainer", "microsandbox", "daytona", "fly-machines"],
+      "description": "The underlying sandbox runtime this template targets."
+    },
+
+    "description": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 300
+    },
+
+    "status": {
+      "type": "string",
+      "enum": ["active", "deprecated", "archived"],
+      "description": "Lifecycle status. Only 'active' templates pass the eval gate."
+    },
+
+    "compute": {
+      "type": "object",
+      "required": ["cpu", "memoryMb", "timeoutSeconds", "estimatedHourlyCost"],
+      "properties": {
+        "cpu": { "type": "number", "minimum": 0.5 },
+        "memoryMb": { "type": "number", "minimum": 128 },
+        "timeoutSeconds": { "type": "number", "minimum": 1, "maximum": 86400 },
+        "estimatedHourlyCost": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+
+    "trustEnvelope": {
+      "type": "object",
+      "required": ["allowNetworkEgress", "allowedEgressDomains", "allowHostMounts", "secretSlots", "notes"],
+      "properties": {
+        "allowNetworkEgress": { "type": "boolean" },
+        "allowedEgressDomains": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "allowHostMounts": { "type": "boolean" },
+        "readOnlyMounts": { "type": "array" },
+        "secretSlots": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "capDrop": { "type": "array", "items": { "type": "string" } },
+        "capAdd": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string", "minLength": 10 }
+      },
+      "additionalProperties": false
+    },
+
+    "preinstalledTools": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "required": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "usagePattern": {
+      "type": "string",
+      "minLength": 20,
+      "description": "Human-readable description of when and how to use this template."
+    },
+
+    "references": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    }
+  }
+}

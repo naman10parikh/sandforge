@@ -1,0 +1,51 @@
+{
+  "$schema": "../../eval/schema/template.schema.json",
+  "id": "e2b-default",
+  "version": "1.0.0",
+  "runtime": "e2b",
+  "description": "Default E2B Firecracker microVM sandbox for Energy agent tasks. Minimal trust envelope.",
+  "status": "active",
+
+  "compute": {
+    "cpu": 1,
+    "memoryMb": 512,
+    "timeoutSeconds": 300,
+    "estimatedHourlyCost": "$0.05/vCPU-hr (E2B standard tier)"
+  },
+
+  "trustEnvelope": {
+    "allowNetworkEgress": false,
+    "allowedEgressDomains": [],
+    "allowHostMounts": false,
+    "readOnlyMounts": [],
+    "secretSlots": [],
+    "capDrop": ["ALL"],
+    "capAdd": [],
+    "notes": "Strictest default. Callers can only narrow (not widen) without a trust-gate doc."
+  },
+
+  "baseImage": {
+    "source": "e2b-default",
+    "tag": "latest",
+    "notes": "E2B's maintained base image. Check monthly for updates."
+  },
+
+  "preinstalledTools": [
+    { "name": "node", "version": ">=18", "required": true },
+    { "name": "python3", "version": ">=3.11", "required": false },
+    { "name": "git", "version": ">=2.40", "required": true }
+  ],
+
+  "usagePattern": "Short-lived task execution (< 5 min). Ideal for: eval runs, script execution, code generation + test cycles.",
+
+  "widening": {
+    "networkEgressDomains": "Add specific domains to allowedEgressDomains + document in a trust-gate-v{N}.md",
+    "secretInjection": "Add named slot to secretSlots; caller binds value at runtime via E2B SDK",
+    "cpuMemory": "Increase compute.cpu / compute.memoryMb; update estimatedHourlyCost"
+  },
+
+  "references": [
+    "energy/.claude/harnesses/INFRA-STACK.md",
+    "https://e2b.dev/docs/sandbox/overview"
+  ]
+}

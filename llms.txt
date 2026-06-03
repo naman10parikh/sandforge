@@ -1,0 +1,25 @@
+# Sandforge
+
+> Provisional name (chairman confirm pending). The sandbox/infra meta-harness of the Energy fleet.
+> Owns the trust envelope: vetted compute templates + validator.
+
+## Documentation
+
+- [README.md](README.md): Public introduction — what Sandforge is and how to use it.
+- [CLAUDE.md](CLAUDE.md): Operating handbook — read first on every session.
+- [AGENTS.md](AGENTS.md): Repository schema and agent navigation guide.
+- [TODOS.md](TODOS.md): Work queue — open and done items.
+- [identity/SOUL.md](identity/SOUL.md): Agent identity, personality, hard boundaries.
+- [identity/MEMORY.md](identity/MEMORY.md): Bootstrap context and trust invariants.
+- [eval/run.mjs](eval/run.mjs): The validator — `node eval/run.mjs` must exit 0 before any commit.
+
+## Templates
+
+- [templates/e2b-default/README.md](templates/e2b-default/README.md): E2B Firecracker microVM (minimal trust, ~150ms cold start).
+- [templates/devcontainer-default/README.md](templates/devcontainer-default/README.md): devcontainer for local dev + CI.
+
+## Notes
+
+- This file follows the llms.txt convention (https://llmstxt.org) for LLM discovery.
+- Upstream infra spec: `energy/.claude/harnesses/INFRA-STACK.md`.
+- Energy fleet: https://github.com/naman10parikh/energy (private).

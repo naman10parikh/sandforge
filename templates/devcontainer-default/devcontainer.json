@@ -1,0 +1,31 @@
+{
+  "name": "Energy Workspace",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22",
+
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.11" },
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "ms-python.python",
+        "bradlc.vscode-tailwindcss"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+
+  "postCreateCommand": "pnpm install",
+  "remoteUser": "node",
+
+  "runArgs": [
+    "--cap-drop=NET_ADMIN",
+    "--cap-drop=SYS_ADMIN"
+  ]
+}
