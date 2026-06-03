@@ -1,0 +1,44 @@
+{
+  "name": "sandforge",
+  "version": "1.0.0",
+  "description": "Sandforge sandbox/infra meta-harness — vetted compute templates and trust validator",
+  "domain": "sandbox-infra",
+  "skills": [
+    {
+      "id": "template-validate",
+      "file": "skills/template-validate.md",
+      "trigger": "validate templates | run eval | check eval | templates green"
+    },
+    {
+      "id": "template-scaffold",
+      "file": "skills/template-scaffold.md",
+      "trigger": "add template | scaffold template | new sandbox template | create template"
+    }
+  ],
+  "sub_agents": [
+    {
+      "id": "trust-auditor",
+      "file": "sub_agents/trust-auditor.md",
+      "trigger": "trust widening | review trust change | trust gate | egress review"
+    }
+  ],
+  "dispatch": {
+    "entry": "dispatch/pick-runtime.mjs",
+    "description": "Select the right sandbox runtime template for a stated need"
+  },
+  "observability": {
+    "log": "observability/run-log.jsonl",
+    "appender": "observability/append-run.mjs"
+  },
+  "eval": {
+    "command": "node eval/run.mjs",
+    "exitCode": 0,
+    "description": "Must pass before every commit"
+  },
+  "identity": {
+    "soul": "identity/SOUL.md",
+    "memory": "identity/MEMORY.md",
+    "heartbeat": "identity/HEARTBEAT.md",
+    "brand": "identity/BRAND.md"
+  }
+}
