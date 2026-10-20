@@ -46,13 +46,13 @@ try {
 ```
 
 A template that allows a few hosts maps to `network: { allowOut: [...hosts], denyOut: ["0.0.0.0/0"] }`
-instead. Widening egress needs its own template and a `trust-gate-v{N}.md` (see TODOS S2.1).
+instead. Widening egress needs its own template and a `trust-gate-v{N}.md`; an `e2b-default-npm` template of that kind is still to be written.
 
 ## Prove it live
 
 ```bash
 export E2B_API_KEY=...        # your key; sandforge reads it from the environment only
-npx -y -p github:naman10parikh/sandforge -p e2b sandforge boot e2b-default
+npx -y -p github:naman10parikh/sandforge sandforge boot e2b-default   # npx also installs the optional e2b SDK
 ```
 
 The boot creates one microVM with the options above, checks each declared tool and version, confirms

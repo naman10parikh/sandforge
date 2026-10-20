@@ -14,7 +14,7 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 
 ## When to spawn
 
-- A new runtime needs a template (the open TODOS items: `microsandbox-default`, `e2b-default-npm`).
+- A new runtime needs a template (still to write: `microsandbox-default`, and `e2b-default-npm` behind a trust gate).
 - A live boot (`sandforge boot`) showed a tool version or compute value the template does not declare.
 - A base image, tool or E2B template name changes upstream.
 
