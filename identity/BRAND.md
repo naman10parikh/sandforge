@@ -7,7 +7,7 @@ reliable, tested artifacts). A forge is a place where raw metal is shaped under 
 pressure into tools you can trust. Sandforge does the same for compute environments: raw infra
 primitives shaped under validation pressure into templates the whole fleet trusts.
 
-The name is provisional — flagged for chairman confirm/rename (see `TODOS.md` §P1).
+The name is provisional until its owner confirms it.
 
 ## Symbolic connection to the workflow
 

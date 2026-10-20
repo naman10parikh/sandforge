@@ -1,2 +1,3 @@
 {"ts":"2026-06-03T00:00:00.000Z","event":"init","command":"node eval/run.mjs","result":"pass","detail":"Initial bootstrap — both templates green","templateCount":2}
 {"ts":"2026-06-03T23:16:40.117Z","event":"validate","command":"node eval/run.mjs","result":"pass","detail":"test run from cp117-wave-f harness completion"}
+{"ts":"2026-10-20T05:24:50.919Z","event":"boot","command":"sandforge boot","result":"fail","detail":"6/7 probes, cold start 321 ms"}

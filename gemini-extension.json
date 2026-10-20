@@ -1,0 +1,17 @@
+{
+  "name": "sandforge",
+  "version": "0.2.0",
+  "description": "Sandbox templates with a trust envelope, validated and booted in E2B.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "sandforge": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "-p",
+        "github:naman10parikh/sandforge",
+        "sandforge-mcp"
+      ]
+    }
+  }
+}

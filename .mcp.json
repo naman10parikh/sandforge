@@ -1,10 +1,8 @@
 {
   "mcpServers": {
     "sandforge": {
-      "command": "node",
-      "args": ["mcp/server.mjs"],
-      "description": "Sandforge MCP server — exposes template validation and dispatch as MCP tools",
-      "env": {}
+      "command": "npx",
+      "args": ["-y", "-p", "github:naman10parikh/sandforge", "sandforge-mcp"]
     }
   }
 }

@@ -1,0 +1,34 @@
+{
+  "about": "Golden cases for sandforge. Template cases patch a copy of templates/e2b-default (set/delete use dotted paths) and say which failure reason must appear, or null when the template must pass. Dispatch cases name the runtime a use case must route to. Plan cases check the E2B options a template produces.",
+  "templates": [
+    { "name": "the shipped e2b-default passes", "set": {}, "expect": null },
+    { "name": "a dangerous capability is refused", "set": { "trustEnvelope.capAdd": ["SYS_ADMIN"] }, "expect": "dangerous capabilities (SYS_ADMIN)" },
+    { "name": "CAP_ prefix does not hide a dangerous capability", "set": { "trustEnvelope.capAdd": ["cap_sys_ptrace"] }, "expect": "dangerous capabilities" },
+    { "name": "closed egress with allowed domains is contradictory", "set": { "trustEnvelope.allowedEgressDomains": ["pypi.org"] }, "expect": "contradictory trust envelope" },
+    { "name": "open egress needs a reason in notes", "set": { "trustEnvelope.allowNetworkEgress": true, "trustEnvelope.notes": "needs net" }, "expect": "notes must explain why" },
+    { "name": "a typo in the trust envelope is caught", "set": { "trustEnvelope.allowNetworkEgres": false }, "delete": ["trustEnvelope.allowNetworkEgress"], "expect": "unknown field \"allowNetworkEgres\"" },
+    { "name": "a missing timeout is caught", "delete": ["compute.timeoutSeconds"], "expect": "missing required field \"timeoutSeconds\"" },
+    { "name": "a deprecated template does not pass", "set": { "status": "deprecated" }, "expect": "only active templates are validated" },
+    { "name": "the id must match the folder", "set": { "id": "someone-else" }, "expect": "but directory=" },
+    { "name": "an unknown runtime is refused", "set": { "runtime": "docker" }, "expect": "not in enum" },
+    { "name": "a devcontainer template needs devcontainer.json", "set": { "runtime": "devcontainer" }, "expect": "requires a devcontainer.json" }
+  ],
+  "dispatch": [
+    { "useCase": "run an untrusted eval script", "runtime": "e2b" },
+    { "useCase": "social media scraper daemon", "runtime": "fly-machines" },
+    { "useCase": "local VSCode dev environment", "runtime": "devcontainer" },
+    { "useCase": "debug my app interactively", "runtime": "devcontainer" },
+    { "useCase": "self-host on-prem with libkrun", "runtime": "microsandbox" },
+    { "useCase": "remote workspace with daytona", "runtime": "daytona" },
+    { "useCase": "long-running agent server with websocket", "runtime": "fly-machines" },
+    { "useCase": "", "runtime": "e2b" }
+  ],
+  "plan": [
+    { "name": "closed egress turns internet access off", "set": {}, "options": { "template": "base", "timeoutMs": 300000, "allowInternetAccess": false } },
+    {
+      "name": "an allowlist becomes allowOut plus deny-all",
+      "set": { "trustEnvelope.allowNetworkEgress": true, "trustEnvelope.allowedEgressDomains": ["registry.npmjs.org"], "trustEnvelope.notes": "npm installs only, reviewed in a trust gate" },
+      "options": { "network": { "allowOut": ["registry.npmjs.org"], "denyOut": ["0.0.0.0/0"] } }
+    }
+  ]
+}

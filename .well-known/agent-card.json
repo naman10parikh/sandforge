@@ -1,0 +1,36 @@
+{
+  "name": "Sandforge",
+  "description": "Sandbox templates with a trust envelope, validated and booted in E2B.",
+  "url": "https://github.com/naman10parikh/sandforge",
+  "version": "0.2.0",
+  "provider": {
+    "organization": "Naman Parikh",
+    "url": "https://github.com/naman10parikh"
+  },
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "template-validate",
+      "name": "template-validate",
+      "description": "Check templates against the schema and trust rules before a commit, or check a folder of your own templates."
+    },
+    {
+      "id": "template-scaffold",
+      "name": "template-scaffold",
+      "description": "Add a template for a runtime that starts from the strictest trust envelope and passes the validator."
+    },
+    {
+      "id": "sandbox-boot",
+      "name": "sandbox-boot",
+      "description": "Boot an e2b template in a live E2B microVM, read the probes, and correct the template to what the VM shows."
+    }
+  ]
+}

@@ -1,13 +1,13 @@
 {
   "$schema": "../../eval/schema/template.schema.json",
   "id": "e2b-default",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "runtime": "e2b",
   "description": "Default E2B Firecracker microVM sandbox for Energy agent tasks. Minimal trust envelope.",
   "status": "active",
 
   "compute": {
-    "cpu": 1,
+    "cpu": 2,
     "memoryMb": 512,
     "timeoutSeconds": 300,
     "estimatedHourlyCost": "$0.05/vCPU-hr (E2B standard tier)"
@@ -25,15 +25,15 @@
   },
 
   "baseImage": {
-    "source": "e2b-default",
+    "source": "base",
     "tag": "latest",
-    "notes": "E2B's maintained base image. Check monthly for updates."
+    "notes": "E2B's default template ('base'), passed to Sandbox.create as the template name. Check monthly for updates."
   },
 
   "preinstalledTools": [
     { "name": "node", "version": ">=18", "required": true },
     { "name": "python3", "version": ">=3.11", "required": false },
-    { "name": "git", "version": ">=2.40", "required": true }
+    { "name": "git", "version": ">=2.39", "required": true }
   ],
 
   "usagePattern": "Short-lived task execution (< 5 min). Ideal for: eval runs, script execution, code generation + test cycles.",

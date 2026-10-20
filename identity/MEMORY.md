@@ -9,7 +9,8 @@
 |---|---|---|
 | E2B as default sandbox runtime | ~150ms cold start, Firecracker microVM, $0.05/vCPU-hr, already specced in energy INFRA-STACK | 2026-06-03 |
 | devcontainer as secondary template | Zero-cost local dev, VSCode/Codespaces compatible, wide adoption | 2026-06-03 |
-| TypeScript for validator (`eval/run.ts`) | Matches energy fleet's default; strict mode; Zod for schema validation | 2026-06-03 |
+| Plain Node ES modules, no dependencies, for the validator (`eval/run.mjs`) | Runs anywhere Node 18+ runs; a small JSON Schema subset checker instead of a library | 2026-06-03 |
+| A live boot proves e2b templates (`sandforge boot`) | A declaration is not evidence; the VM is. The first boot (321 ms cold) found git 2.39.5 and 2 vCPU, not what the template said | 2026-10-19 |
 | Eval-green gates commit | "It compiles" ≠ done; every template must pass validator before shipping | 2026-06-03 |
 | Additive-only on templates | Deprecated templates archived to `templates/archive/`, never deleted | 2026-06-03 |
 
@@ -33,7 +34,9 @@
 ```
 identity/        — SOUL, BRAND, MEMORY, HEARTBEAT
 templates/       — owned artifacts (one subdir per template)
-eval/            — validator harness (run.ts + schema + tests)
+eval/            — validator (run.mjs + schema) and golden cases (golden.mjs)
+lib/             — boot.mjs (E2B boot + probes), recall.mjs (memory search)
+bin/sandforge.mjs, mcp/server.mjs — the CLI and the MCP server
 memory/          — session logs
 CLAUDE.md        — operating handbook (this repo's CLAUDE.md)
 AGENTS.md        — agent navigation schema
@@ -44,7 +47,9 @@ llms.txt         — LLM discovery index
 
 ## Patterns to remember
 
-- `eval/run.ts` is the canonical validator. `node eval/run.ts` exits 0 on green, non-zero on red.
+- `eval/run.mjs` is the canonical validator. `node eval/run.mjs` exits 0 on green, non-zero on red.
+- E2B's default template is named `base`. `allowNetworkEgress: false` maps to `allowInternetAccess: false`; an allowlist maps to `network.allowOut` plus `denyOut: ["0.0.0.0/0"]`.
+- Corrections become rules in `identity/LEARNINGS.md`; `sandforge recall "<query>"` searches all of this.
 - New templates go in `templates/{name}/`. They need: a spec JSON, a README, and a passing eval.
 - Trust changes go through `trust-gate-v{N}.md` — don't widen the envelope without review.
 - The energy INFRA-STACK.md (`energy/.claude/harnesses/INFRA-STACK.md`) is the upstream spec; Sandforge implements it.

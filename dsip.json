@@ -1,0 +1,22 @@
+{
+  "dsip": "0.1",
+  "product": "sandforge",
+  "levels": ["agent"],
+  "loop": {
+    "cadence": "nightly",
+    "steps": ["review", "extract", "prioritize", "validate", "ship"]
+  },
+  "selection": "performance",
+  "eval": {
+    "rubric": "eval/golden.json",
+    "gate": "npm test && npm run eval pass in CI on every push and pull request"
+  },
+  "snapback": {
+    "granularity": ["skill"],
+    "vcs": "git"
+  },
+  "externalIntelligence": {
+    "enabled": true,
+    "source": "the newest e2b SDK on the npm registry and its published types (read nightly by scripts/sdk-drift.mjs)"
+  }
+}

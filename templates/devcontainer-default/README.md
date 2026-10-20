@@ -56,7 +56,7 @@ jobs:
 
 ```bash
 # From repo root
-node eval/run.ts
+node eval/run.mjs
 # Expect: ✓ devcontainer-default: schema valid | trust invariants pass | devcontainer.json present
 ```
 

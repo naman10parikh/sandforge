@@ -1,0 +1,15 @@
+{
+  "name": "sandforge",
+  "owner": {
+    "name": "Naman Parikh",
+    "url": "https://github.com/naman10parikh"
+  },
+  "description": "Sandforge, the sandbox employee: E2B and devcontainer templates with a trust envelope, a validator, and a live E2B boot that checks the envelope holds.",
+  "plugins": [
+    {
+      "name": "sandforge",
+      "source": "./",
+      "description": "Sandbox templates with a trust envelope, validated and booted in E2B."
+    }
+  ]
+}

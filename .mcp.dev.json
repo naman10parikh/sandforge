@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "sandforge-dev": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["mcp/server.mjs"],
+      "description": "This checkout's own server: sandforge_validate, sandforge_dispatch, sandforge_list_templates, sandforge_get_template, sandforge_plan"
+    }
+  }
+}

@@ -6,8 +6,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'echo \"$CLAUDE_TOOL_INPUT\" | grep -q \"git commit\" && node ~/sandforge/eval/run.mjs || true'",
-            "description": "Run eval/run.mjs before any git commit to enforce the eval-green gate"
+            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/template-guard.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/template-guard.mjs\"",
+            "timeout": 30
           }
         ]
       }
@@ -18,7 +30,9 @@
       "Bash(node eval/run.mjs)",
       "Bash(node dispatch/pick-runtime.mjs *)",
       "Bash(node observability/append-run.mjs *)",
-      "Bash(git -C ~/sandforge *)"
+      "Bash(node bin/sandforge.mjs *)",
+      "Bash(npm test)",
+      "Bash(npm run eval)"
     ]
   }
 }

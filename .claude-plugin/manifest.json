@@ -6,20 +6,30 @@
   "skills": [
     {
       "id": "template-validate",
-      "file": "skills/template-validate.md",
+      "file": "skills/template-validate/SKILL.md",
       "trigger": "validate templates | run eval | check eval | templates green"
     },
     {
       "id": "template-scaffold",
-      "file": "skills/template-scaffold.md",
+      "file": "skills/template-scaffold/SKILL.md",
       "trigger": "add template | scaffold template | new sandbox template | create template"
+    },
+    {
+      "id": "sandbox-boot",
+      "file": "skills/sandbox-boot/SKILL.md",
+      "trigger": "boot template | prove template | live e2b check | cold start"
     }
   ],
   "sub_agents": [
     {
       "id": "trust-auditor",
-      "file": "sub_agents/trust-auditor.md",
+      "file": ".claude/agents/trust-auditor.md",
       "trigger": "trust widening | review trust change | trust gate | egress review"
+    },
+    {
+      "id": "template-forger",
+      "file": ".claude/agents/template-forger.md",
+      "trigger": "write template | correct template after boot | new runtime template"
     }
   ],
   "dispatch": {
@@ -40,5 +50,31 @@
     "memory": "identity/MEMORY.md",
     "heartbeat": "identity/HEARTBEAT.md",
     "brand": "identity/BRAND.md"
+  },
+  "cli": {
+    "entry": "bin/sandforge.mjs",
+    "commands": [
+      "list",
+      "show",
+      "validate",
+      "pick",
+      "plan",
+      "boot",
+      "recall"
+    ]
+  },
+  "mcp": {
+    "entry": "mcp/server.mjs",
+    "tools": [
+      "sandforge_validate",
+      "sandforge_dispatch",
+      "sandforge_list_templates",
+      "sandforge_get_template",
+      "sandforge_plan"
+    ]
+  },
+  "sandbox": {
+    "entry": "lib/boot.mjs",
+    "description": "Boot an e2b template in a live E2B microVM and probe its trust envelope"
   }
 }

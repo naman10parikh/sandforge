@@ -1,0 +1,22 @@
+name: CI
+# Tests and evals on every push and pull request. Nothing here boots an E2B sandbox: a live boot costs
+# money, so it runs only by hand (`sandforge boot <id>`, or `SANDFORGE_LIVE_E2B=1 npm test`).
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run tests
+        run: npm test # validator, dispatch, boot plan and judging, CLI, MCP server, hook; the live boot is skipped
+      - name: Run sandforge eval
+        run: npm run eval # every template in templates/, then the golden cases in eval/golden.json
+      - name: CLI answers from a clean checkout
+        run: node bin/sandforge.mjs --help && node bin/sandforge.mjs plan e2b-default

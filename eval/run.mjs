@@ -8,37 +8,36 @@
  * 3. Runtime-specific structural checks (e.g. devcontainer.json present)
  *
  * Exit 0 = all green. Non-zero = at least one failure.
- * Run: node eval/run.mjs
+ * Run: node eval/run.mjs            (the CLI, MCP server and hooks import the same checks)
  */
 
-import { readFileSync, readdirSync, existsSync, statSync } from "fs";
-import { join, resolve, dirname } from "path";
+import { readFileSync, readdirSync, existsSync, statSync, realpathSync } from "fs";
+import { join, resolve, dirname, basename } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(__dirname, "..");
-const TEMPLATES_DIR = join(REPO_ROOT, "templates");
+export const REPO_ROOT = resolve(__dirname, "..");
+export const TEMPLATES_DIR = join(REPO_ROOT, "templates");
 const SCHEMA_PATH = join(__dirname, "schema", "template.schema.json");
 
+// Capabilities that let code inside a sandbox reach the host or other processes (TODOS S2.4).
+export const DANGEROUS_CAPS = ["ALL", "SYS_ADMIN", "NET_ADMIN", "SYS_PTRACE", "SYS_MODULE", "DAC_READ_SEARCH"];
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-function pass(label) {
-  process.stdout.write(`  ✓ ${label}\n`);
-}
-
-function fail(label, reason) {
-  process.stderr.write(`  ✗ ${label}: ${reason}\n`);
-}
 
 function loadJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+export function loadSchema() {
+  return loadJson(SCHEMA_PATH);
+}
+
 // ─── Minimal JSON Schema validator (no external deps) ───────────────────────
-// Validates required fields, types, enum values, and patterns.
+// Validates required fields, types, enum values, patterns and additionalProperties: false.
 // Not a full ajv — handles the subset our schema actually uses.
 
-function validateSchema(data, schema, path = "#") {
+export function validateSchema(data, schema, path = "#") {
   const errors = [];
 
   if (schema.type === "object") {
@@ -54,6 +53,11 @@ function validateSchema(data, schema, path = "#") {
     for (const [key, subSchema] of Object.entries(schema.properties ?? {})) {
       if (key in data) {
         errors.push(...validateSchema(data[key], subSchema, `${path}.${key}`));
+      }
+    }
+    if (schema.additionalProperties === false) {
+      for (const key of Object.keys(data)) {
+        if (!(key in (schema.properties ?? {}))) errors.push(`${path}: unknown field "${key}"`);
       }
     }
   } else if (schema.type === "string") {
@@ -108,9 +112,9 @@ function validateSchema(data, schema, path = "#") {
 
 // ─── Trust invariant checks ─────────────────────────────────────────────────
 
-function checkTrustInvariants(tmpl) {
+export function checkTrustInvariants(tmpl) {
   const errors = [];
-  const trust = tmpl.trustEnvelope;
+  const trust = tmpl.trustEnvelope ?? {};
 
   // Invariant 1: allowNetworkEgress=false ⟹ allowedEgressDomains must be empty
   if (!trust.allowNetworkEgress && (trust.allowedEgressDomains ?? []).length > 0) {
@@ -132,6 +136,12 @@ function checkTrustInvariants(tmpl) {
   // Invariant 4: capAdd present and array (may be empty — that's fine)
   if (!Array.isArray(trust.capAdd)) {
     errors.push("trustEnvelope.capAdd must be an array (can be empty)");
+  } else {
+    // Invariant 4b (TODOS S2.4): no capability that reaches the host or other processes
+    const dangerous = trust.capAdd.filter((c) => DANGEROUS_CAPS.includes(String(c).toUpperCase().replace(/^CAP_/, "")));
+    if (dangerous.length > 0) {
+      errors.push(`trustEnvelope.capAdd grants dangerous capabilities (${dangerous.join(", ")}) — never allowed in a template`);
+    }
   }
 
   // Invariant 5: notes must explain any widened permissions
@@ -144,7 +154,7 @@ function checkTrustInvariants(tmpl) {
 
 // ─── Runtime-specific checks ─────────────────────────────────────────────────
 
-function checkRuntimeSpecific(tmpl, templateDir) {
+export function checkRuntimeSpecific(tmpl, templateDir) {
   const errors = [];
 
   if (tmpl.runtime === "devcontainer") {
@@ -164,105 +174,109 @@ function checkRuntimeSpecific(tmpl, templateDir) {
   return errors;
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────
+// ─── One template, then all of them ─────────────────────────────────────────
 
-const schema = loadJson(SCHEMA_PATH);
-let totalTemplates = 0;
-let totalFailures = 0;
-
-const entries = readdirSync(TEMPLATES_DIR).filter(
-  (name) => name !== "archive" && statSync(join(TEMPLATES_DIR, name)).isDirectory()
-);
-
-if (entries.length === 0) {
-  console.error("No templates found in templates/ (excluding archive/)");
-  process.exit(1);
-}
-
-for (const name of entries) {
-  const templateDir = join(TEMPLATES_DIR, name);
+/** Validate one template directory. Returns { name, template, checks: [{ label, ok, reason }] }. */
+export function validateTemplateDir(templateDir, schema = loadSchema()) {
+  const name = basename(templateDir);
+  const checks = [];
+  const add = (label, reason) => checks.push(reason ? { label, ok: false, reason } : { label, ok: true });
   const templatePath = join(templateDir, "template.json");
-
-  console.log(`\n[${name}]`);
-  totalTemplates++;
 
   // 0. template.json must exist
   if (!existsSync(templatePath)) {
-    fail("template.json present", "file not found");
-    totalFailures++;
-    continue;
+    add("template.json present", "file not found");
+    return { name, template: null, checks };
   }
 
   let tmpl;
   try {
     tmpl = loadJson(templatePath);
   } catch (e) {
-    fail("template.json parseable", `invalid JSON: ${e.message}`);
-    totalFailures++;
-    continue;
+    add("template.json parseable", `invalid JSON: ${e.message}`);
+    return { name, template: null, checks };
   }
-  pass("template.json parseable");
+  add("template.json parseable");
 
   // 1. id matches directory name
-  if (tmpl.id !== name) {
-    fail("id matches directory", `template.json id="${tmpl.id}" but directory="${name}"`);
-    totalFailures++;
-  } else {
-    pass("id matches directory");
-  }
+  add("id matches directory", tmpl.id !== name ? `template.json id="${tmpl.id}" but directory="${name}"` : null);
 
   // 2. JSON Schema validation
   const schemaErrors = validateSchema(tmpl, schema);
-  if (schemaErrors.length > 0) {
-    for (const e of schemaErrors) fail("schema", e);
-    totalFailures += schemaErrors.length;
-  } else {
-    pass("schema valid");
-  }
+  if (schemaErrors.length > 0) schemaErrors.forEach((e) => add("schema", e));
+  else add("schema valid");
 
   // 3. Trust invariants
   const trustErrors = checkTrustInvariants(tmpl);
-  if (trustErrors.length > 0) {
-    for (const e of trustErrors) fail("trust invariant", e);
-    totalFailures += trustErrors.length;
-  } else {
-    pass("trust invariants pass");
-  }
+  if (trustErrors.length > 0) trustErrors.forEach((e) => add("trust invariant", e));
+  else add("trust invariants pass");
 
   // 4. Status check — only active templates are expected to pass
-  if (tmpl.status !== "active") {
-    fail("status", `template status="${tmpl.status}" — only active templates are validated (move to archive/ if deprecated)`);
-    totalFailures++;
-  } else {
-    pass("status=active");
-  }
+  add(
+    "status=active",
+    tmpl.status !== "active" ? `template status="${tmpl.status}" — only active templates are validated (move to archive/ if deprecated)` : null
+  );
 
   // 5. README.md present
-  const readmePath = join(templateDir, "README.md");
-  if (!existsSync(readmePath)) {
-    fail("README.md present", "file not found");
-    totalFailures++;
-  } else {
-    pass("README.md present");
-  }
+  add("README.md present", existsSync(join(templateDir, "README.md")) ? null : "file not found");
 
   // 6. Runtime-specific checks
   const runtimeErrors = checkRuntimeSpecific(tmpl, templateDir);
-  if (runtimeErrors.length > 0) {
-    for (const e of runtimeErrors) fail("runtime-specific", e);
-    totalFailures += runtimeErrors.length;
-  } else {
-    pass(`runtime-specific checks (${tmpl.runtime})`);
+  if (runtimeErrors.length > 0) runtimeErrors.forEach((e) => add("runtime-specific", e));
+  else add(`runtime-specific checks (${tmpl.runtime})`);
+
+  return { name, template: tmpl, checks };
+}
+
+/** Names of the active template directories (archive/ excluded). */
+export function listTemplateNames(templatesDir = TEMPLATES_DIR) {
+  if (!existsSync(templatesDir)) return [];
+  return readdirSync(templatesDir)
+    .filter((name) => name !== "archive" && statSync(join(templatesDir, name)).isDirectory())
+    .sort();
+}
+
+/** Validate every active template. Returns { templates, failures, results }. */
+export function validateAll(templatesDir = TEMPLATES_DIR) {
+  const schema = loadSchema();
+  const results = listTemplateNames(templatesDir).map((name) => validateTemplateDir(join(templatesDir, name), schema));
+  const failures = results.reduce((n, r) => n + r.checks.filter((c) => !c.ok).length, 0);
+  return { templates: results.length, failures, results };
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────
+
+export function main(templatesDir = TEMPLATES_DIR) {
+  const { templates, failures, results } = validateAll(templatesDir);
+
+  if (templates === 0) {
+    console.error("No templates found in templates/ (excluding archive/)");
+    return 1;
   }
+
+  for (const r of results) {
+    console.log(`\n[${r.name}]`);
+    for (const c of r.checks) {
+      if (c.ok) process.stdout.write(`  ✓ ${c.label}\n`);
+      else process.stderr.write(`  ✗ ${c.label}: ${c.reason}\n`);
+    }
+  }
+
+  console.log(`\n${"─".repeat(50)}`);
+  if (failures === 0) {
+    console.log(`✓ All ${templates} template(s) passed validation.`);
+    return 0;
+  }
+  console.error(`✗ ${failures} failure(s) across ${templates} template(s).`);
+  return 1;
 }
 
-// ─── Summary ──────────────────────────────────────────────────────────────
-
-console.log(`\n${"─".repeat(50)}`);
-if (totalFailures === 0) {
-  console.log(`✓ All ${totalTemplates} template(s) passed validation.`);
-  process.exit(0);
-} else {
-  console.error(`✗ ${totalFailures} failure(s) across ${totalTemplates} template(s).`);
-  process.exit(1);
-}
+// Run only when executed directly. realpath: an npx bin is a symlink, so argv[1] may not equal this file's path.
+const invokedDirectly = (() => {
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+})();
+if (invokedDirectly) process.exit(main(process.argv[2] ? resolve(process.argv[2]) : TEMPLATES_DIR));

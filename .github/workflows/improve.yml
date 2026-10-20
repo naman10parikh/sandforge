@@ -1,0 +1,39 @@
+name: Improve
+# The improvement loop: every night, re-run the tests and evals, and compare what sandforge's E2B boot relies
+# on (the SDK version range, the Sandbox.create options, the default template name) with the newest E2B SDK.
+# Drift becomes an issue with a proposed change. It opens issues only; a person reviews and lands every change.
+# It needs no secret and never boots a sandbox.
+on:
+  schedule:
+    - cron: "17 10 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  improve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm test
+      - run: npm run eval
+      - name: Compare the E2B SDK with what the boot uses
+        id: drift
+        run: |
+          set +e
+          node scripts/sdk-drift.mjs --out proposal.md
+          code=$?
+          if [ "$code" -eq 3 ]; then echo "drift=true" >> "$GITHUB_OUTPUT"; elif [ "$code" -ne 0 ]; then exit "$code"; fi
+      - name: Open a proposal issue
+        if: steps.drift.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="sandforge: the E2B SDK changed what the boot relies on"
+          open=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq 'length')
+          if [ "$open" = "0" ]; then gh issue create --title "$title" --body-file proposal.md; fi

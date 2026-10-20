@@ -14,11 +14,13 @@
  */
 
 import { createInterface } from "readline";
+import { realpathSync } from "fs";
+import { fileURLToPath } from "url";
 
 // ─── Dispatch rules ───────────────────────────────────────────────────────────
-// Ordered: first match wins. Each rule has keywords (any match) and a weight.
+// Ordered strictest first. The rule with the most keyword matches wins; a tie goes to the earlier rule.
 
-const RULES = [
+export const RULES = [
   {
     runtime: "e2b",
     template: "e2b-default",
@@ -73,22 +75,30 @@ const DEFAULT_RULE = RULES[0]; // e2b-default as fallback
 
 // ─── Matching logic ───────────────────────────────────────────────────────────
 
-function pickRuntime(useCase) {
+// Whole words only: "ci" must not match "social", "dev" must not match "device".
+const hasWord = (text, k) => new RegExp(`(^|[^a-z0-9])${k.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}($|[^a-z0-9])`).test(text);
+
+/** The rule with the most keyword matches wins; a tie goes to the earlier (stricter) rule. */
+export function pickRuntime(useCase) {
   const lower = (useCase || "").toLowerCase();
 
+  let best = null;
   for (const rule of RULES) {
-    const matched = rule.keywords.find((k) => lower.includes(k));
-    if (matched) {
-      return {
-        runtime: rule.runtime,
-        template: rule.template,
-        label: rule.label,
-        when: rule.when,
-        matchedKeyword: matched,
-        templatePath: rule.template ? `templates/${rule.template}/template.json` : null,
-        reasoning: `Matched keyword "${matched}" → runtime '${rule.runtime}'.`,
-      };
-    }
+    const matched = rule.keywords.filter((k) => hasWord(lower, k));
+    if (matched.length > 0 && (!best || matched.length > best.matched.length)) best = { rule, matched };
+  }
+  if (best) {
+    const { rule, matched } = best;
+    return {
+      runtime: rule.runtime,
+      template: rule.template,
+      label: rule.label,
+      when: rule.when,
+      matchedKeyword: matched[0],
+      matchedKeywords: matched,
+      templatePath: rule.template ? `templates/${rule.template}/template.json` : null,
+      reasoning: `Matched ${matched.map((k) => `"${k}"`).join(", ")} → runtime '${rule.runtime}'.`,
+    };
   }
 
   return {
@@ -121,9 +131,19 @@ function printResult(useCase, result) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+// Run only when executed directly (the CLI and MCP server import pickRuntime).
+const invokedDirectly = (() => {
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+})();
 const arg = process.argv[2];
 
-if (arg) {
+if (!invokedDirectly) {
+  // imported: nothing to run
+} else if (arg) {
   const result = pickRuntime(arg);
   printResult(arg, result);
   process.exit(0);

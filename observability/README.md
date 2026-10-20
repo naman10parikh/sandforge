@@ -26,7 +26,7 @@ Each line in `run-log.jsonl` is a JSON object:
 | Field | Values | Description |
 |---|---|---|
 | `ts` | ISO 8601 | When the event occurred |
-| `event` | `validate` / `dispatch` / `scaffold` / `trust-audit` / `init` | What happened |
+| `event` | `validate` / `dispatch` / `plan` / `boot` / `mcp:<tool>` / `scaffold` / `trust-audit` / `init` | What happened |
 | `command` | string | CLI command or skill invoked |
 | `result` | `pass` / `fail` | Outcome |
 | `detail` | string (≤200 chars) | Human-readable summary |
@@ -53,4 +53,4 @@ node observability/append-run.mjs scaffold pass "added microsandbox-default temp
 
 ## Integration
 
-The `skills/template-validate.md` skill instructs callers to append to this log after every eval run. The MCP server's `sandforge_validate` tool also returns the pass/fail result that can be forwarded here.
+Since CP158 the log writes itself: `sandforge validate`, `pick`, `plan` and `boot` and every MCP tool call append a record through `appendRun()` in `append-run.mjs` (a boot also records its cold start). Set `SANDFORGE_LOG=/path/file.jsonl` to write elsewhere; the tests do, so they never touch this file. The `skills/template-validate/SKILL.md` skill covers the manual command for a bare `node eval/run.mjs`.

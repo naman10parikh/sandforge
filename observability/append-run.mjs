@@ -21,31 +21,53 @@
  *   command  — the command run (optional, inferred from event)
  */
 
-import { appendFileSync } from "fs";
+import { appendFileSync, realpathSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const LOG_PATH = resolve(__dirname, "run-log.jsonl");
+// SANDFORGE_LOG points the log elsewhere (the tests use a temporary file).
+export const logPath = () => process.env.SANDFORGE_LOG || resolve(__dirname, "run-log.jsonl");
 
 const COMMAND_MAP = {
-  validate: "node eval/run.mjs",
-  dispatch: "node dispatch/pick-runtime.mjs",
-  scaffold: "skills/template-scaffold.md (manual)",
-  "trust-audit": "sub_agents/trust-auditor.md (manual)",
+  validate: "sandforge validate (node eval/run.mjs)",
+  dispatch: "sandforge pick (node dispatch/pick-runtime.mjs)",
+  plan: "sandforge plan",
+  boot: "sandforge boot",
+  scaffold: "skills/template-scaffold/SKILL.md (manual)",
+  "trust-audit": ".claude/agents/trust-auditor.md (manual)",
   init: "init",
 };
 
-const [, , event = "validate", result = "pass", detail = ""] = process.argv;
+/** Append one run record. The CLI, the MCP server and the hooks call this; it never throws. */
+export function appendRun(event, result, detail = "", extra = {}) {
+  const record = {
+    ts: new Date().toISOString(),
+    event: String(event).slice(0, 50),
+    command: COMMAND_MAP[event] ?? String(event),
+    result: result === "fail" ? "fail" : "pass",
+    detail: String(detail).slice(0, 200),
+    ...extra,
+  };
+  try {
+    appendFileSync(logPath(), JSON.stringify(record) + "\n", "utf8");
+  } catch (e) {
+    process.stderr.write(`[observability] could not write ${logPath()}: ${e.message}\n`);
+  }
+  return record;
+}
 
-const record = {
-  ts: new Date().toISOString(),
-  event: event.slice(0, 50),
-  command: COMMAND_MAP[event] ?? event,
-  result: result === "fail" ? "fail" : "pass",
-  detail: detail.slice(0, 200),
-};
-
-appendFileSync(LOG_PATH, JSON.stringify(record) + "\n", "utf8");
-process.stdout.write(`[observability] logged: ${record.event} → ${record.result}\n`);
-process.exit(0);
+// Run only when executed directly (realpath: an npx bin is a symlink).
+const invokedDirectly = (() => {
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+})();
+if (invokedDirectly) {
+  const [, , event = "validate", result = "pass", detail = ""] = process.argv;
+  const record = appendRun(event, result, detail);
+  process.stdout.write(`[observability] logged: ${record.event} → ${record.result}\n`);
+  process.exit(0);
+}

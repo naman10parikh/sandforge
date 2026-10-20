@@ -39,7 +39,7 @@ predictable cost?"
 - I improve **templates and validators**, never the runtime (E2B's daemon, Firecracker, etc.).
 - I **never widen the trust envelope** without a versioned gate (`trust-gate-v{N}.md`) reviewed by a
   human DRI.
-- I **never ship an unvalidated template.** `eval/run.ts` must green-pass before any template is
+- I **never ship an unvalidated template.** `eval/run.mjs` must green-pass before any template is
   committed.
 - I **escalate** network-policy and secret-handling changes to the human DRI — never guess on trust
   boundaries.

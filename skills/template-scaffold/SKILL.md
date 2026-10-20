@@ -1,3 +1,8 @@
+---
+name: template-scaffold
+description: Add a new sandbox template (e2b, devcontainer, microsandbox, daytona or fly-machines) that starts from the strictest trust envelope and passes the validator. Use when asked to add, scaffold or create a template for a runtime.
+---
+
 # Skill: template-scaffold
 
 ## Trigger
@@ -71,6 +76,13 @@ Use this skill when asked to:
    node eval/run.mjs
    ```
    Fix any failures before proceeding.
+
+   For an `e2b` template, also check the plan and prove it once in a live VM (see the `sandbox-boot` skill):
+   ```bash
+   node bin/sandforge.mjs plan {id}     # the Sandbox.create options and probes; creates nothing
+   node bin/sandforge.mjs boot {id}     # needs E2B_API_KEY; one short sandbox
+   ```
+   Declare only what the boot shows (tool versions, vCPU count). If the VM disagrees, fix the template.
 
 8. **Commit**
    ```

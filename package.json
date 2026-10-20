@@ -1,0 +1,43 @@
+{
+  "name": "sandforge",
+  "version": "0.2.0",
+  "description": "Sandbox templates with a trust envelope, validated and booted in E2B.",
+  "type": "module",
+  "private": true,
+  "author": "Naman Parikh (https://github.com/naman10parikh)",
+  "repository": { "type": "git", "url": "git+https://github.com/naman10parikh/sandforge.git" },
+  "homepage": "https://github.com/naman10parikh/sandforge#readme",
+  "bin": {
+    "sandforge": "./bin/sandforge.mjs",
+    "sandforge-mcp": "./mcp/server.mjs"
+  },
+  "scripts": {
+    "test": "node --test",
+    "validate": "node eval/run.mjs",
+    "eval": "node eval/run.mjs && node eval/golden.mjs"
+  },
+  "files": [
+    "bin/",
+    "mcp/",
+    "lib/",
+    "eval/",
+    "dispatch/",
+    "hooks/",
+    "templates/",
+    "skills/",
+    "identity/",
+    "memory/",
+    ".claude/agents/",
+    "observability/append-run.mjs",
+    "observability/README.md",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "keywords": ["ai", "claude", "agent", "sandbox", "e2b", "devcontainer", "agent-native", "mcp", "agent-skills", "claude-code"],
+  "optionalDependencies": {
+    "e2b": "^2.56.0"
+  }
+}

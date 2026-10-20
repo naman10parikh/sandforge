@@ -2,92 +2,82 @@
 /**
  * Sandforge MCP Server (stdio transport)
  *
- * Exposes two tools over the Model Context Protocol:
- *   - sandforge_validate  — run eval/run.mjs, return pass/fail + output
- *   - sandforge_dispatch  — pick the right runtime template for a stated need
+ * Exposes five tools over the Model Context Protocol. None of them creates a sandbox or spends money;
+ * booting a template in E2B stays a deliberate CLI step (`sandforge boot`).
+ *   - sandforge_validate        — run the template validator, return pass/fail + every check
+ *   - sandforge_dispatch        — pick the right runtime template for a stated need
+ *   - sandforge_list_templates  — the templates with runtime, egress and limits
+ *   - sandforge_get_template    — one template's full JSON
+ *   - sandforge_plan            — the exact E2B create options and probes a boot of a template would use
  *
  * Zero external deps. Uses the MCP stdio protocol (newline-delimited JSON-RPC 2.0).
- * Start: node mcp/server.mjs   (stdio)
+ * Start: node mcp/server.mjs   (stdio)   or   npx -y -p github:naman10parikh/sandforge sandforge-mcp
  */
 
-import { execSync } from "child_process";
 import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
+import { join } from "path";
+import { createInterface } from "readline";
+import { TEMPLATES_DIR, listTemplateNames, validateAll } from "../eval/run.mjs";
+import { pickRuntime } from "../dispatch/pick-runtime.mjs";
+import { loadTemplate, planBoot } from "../lib/boot.mjs";
+import { appendRun } from "../observability/append-run.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(__dirname, "..");
-
-// ─── MCP protocol helpers ─────────────────────────────────────────────────────
-
-function send(obj) {
-  process.stdout.write(JSON.stringify(obj) + "\n");
-}
-
-function sendError(id, code, message) {
-  send({ jsonrpc: "2.0", id, error: { code, message } });
-}
-
-function sendResult(id, result) {
-  send({ jsonrpc: "2.0", id, result });
-}
+const VERSION = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 
 // ─── Tool implementations ────────────────────────────────────────────────────
 
+const text = (obj, isError = false) => ({ content: [{ type: "text", text: JSON.stringify(obj, null, 2) }], isError });
+
 function toolValidate() {
-  try {
-    const output = execSync("node eval/run.mjs", {
-      cwd: REPO_ROOT,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    return { passed: true, output: output.trim() };
-  } catch (err) {
-    const output = (err.stdout || "") + (err.stderr || "");
-    return { passed: false, output: output.trim() };
-  }
+  const r = validateAll();
+  const output = r.results
+    .flatMap((t) => [`[${t.name}]`, ...t.checks.map((c) => (c.ok ? `  ✓ ${c.label}` : `  ✗ ${c.label}: ${c.reason}`))])
+    .join("\n");
+  return { passed: r.failures === 0 && r.templates > 0, templates: r.templates, failures: r.failures, output };
 }
 
-function toolDispatch(useCase) {
-  // Load dispatch logic inline (no circular dep on dispatch/pick-runtime.mjs)
-  const rules = [
-    { runtime: "e2b", keywords: ["e2b", "firecracker", "microvm", "short-lived", "eval", "task", "script", "agent"], template: "e2b-default" },
-    { runtime: "devcontainer", keywords: ["devcontainer", "local", "vscode", "codespaces", "ci", "dev", "development"], template: "devcontainer-default" },
-    { runtime: "microsandbox", keywords: ["microsandbox", "self-host", "libkrun", "open-source", "oss"], template: null },
-    { runtime: "daytona", keywords: ["daytona", "workspace", "remote dev"], template: null },
-    { runtime: "fly-machines", keywords: ["fly", "fly.io", "persistent", "long-running", "server"], template: null },
-  ];
+function toolList() {
+  return listTemplateNames().map((id) => {
+    const t = JSON.parse(readFileSync(join(TEMPLATES_DIR, id, "template.json"), "utf8"));
+    return {
+      id,
+      runtime: t.runtime,
+      version: t.version,
+      description: t.description,
+      allowNetworkEgress: t.trustEnvelope.allowNetworkEgress,
+      allowedEgressDomains: t.trustEnvelope.allowedEgressDomains,
+      timeoutSeconds: t.compute.timeoutSeconds,
+      estimatedHourlyCost: t.compute.estimatedHourlyCost,
+    };
+  });
+}
 
-  const lower = (useCase || "").toLowerCase();
-  for (const rule of rules) {
-    if (rule.keywords.some((k) => lower.includes(k))) {
-      return {
-        runtime: rule.runtime,
-        template: rule.template,
-        reasoning: `Matched keyword in use-case for runtime '${rule.runtime}'.`,
-        templatePath: rule.template ? `templates/${rule.template}/template.json` : null,
-      };
-    }
-  }
-  return {
-    runtime: "e2b",
-    template: "e2b-default",
-    reasoning: "No keyword match — defaulting to e2b-default (strictest, most general).",
-    templatePath: "templates/e2b-default/template.json",
-  };
+function toolGet(id) {
+  if (!listTemplateNames().includes(id)) return { error: `no template '${id}'; try sandforge_list_templates` };
+  return JSON.parse(readFileSync(join(TEMPLATES_DIR, id, "template.json"), "utf8"));
+}
+
+function toolPlan(id) {
+  if (!listTemplateNames().includes(id)) return { error: `no template '${id}'; try sandforge_list_templates` };
+  const t = loadTemplate(id);
+  if (t.failed.length > 0) return { error: `'${id}' fails validation`, failed: t.failed };
+  if (t.template.runtime !== "e2b") return { error: `'${id}' targets ${t.template.runtime}; only e2b templates boot in E2B` };
+  return { ...planBoot(t.template), boot: `sandforge boot ${id}  (needs E2B_API_KEY; one short sandbox)` };
 }
 
 // ─── MCP request handler ─────────────────────────────────────────────────────
 
+const idArg = {
+  type: "object",
+  properties: { id: { type: "string", description: "A template id from sandforge_list_templates, such as 'e2b-default'." } },
+  required: ["id"],
+};
+
 const TOOLS = [
   {
     name: "sandforge_validate",
-    description: "Run the Sandforge template validator (eval/run.mjs). Returns pass/fail and full output.",
-    inputSchema: {
-      type: "object",
-      properties: {},
-      required: [],
-    },
+    description: "Run the Sandforge template validator (schema, trust invariants, required files). Returns pass/fail and every check.",
+    inputSchema: { type: "object", properties: {}, required: [] },
   },
   {
     name: "sandforge_dispatch",
@@ -103,67 +93,70 @@ const TOOLS = [
       required: ["useCase"],
     },
   },
+  {
+    name: "sandforge_list_templates",
+    description: "List the sandbox templates with their runtime, network egress, timeout and cost.",
+    inputSchema: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "sandforge_get_template",
+    description: "Return one template's full definition, including its trust envelope.",
+    inputSchema: idArg,
+  },
+  {
+    name: "sandforge_plan",
+    description: "Show the exact E2B Sandbox.create options and the probes that `sandforge boot` would run for an e2b template. Creates nothing.",
+    inputSchema: idArg,
+  },
 ];
 
-function handleRequest(req) {
-  const { id, method, params } = req;
-
-  if (method === "initialize") {
-    return sendResult(id, {
-      protocolVersion: "2024-11-05",
-      capabilities: { tools: {} },
-      serverInfo: { name: "sandforge", version: "1.0.0" },
-    });
+function callTool(name, args) {
+  if (name === "sandforge_validate") {
+    const r = toolValidate();
+    return text(r, !r.passed);
   }
-
-  if (method === "tools/list") {
-    return sendResult(id, { tools: TOOLS });
+  if (name === "sandforge_dispatch") return text(pickRuntime(args.useCase));
+  if (name === "sandforge_list_templates") return text(toolList());
+  if (name === "sandforge_get_template") {
+    const r = toolGet(String(args.id ?? ""));
+    return text(r, Boolean(r.error));
   }
-
-  if (method === "tools/call") {
-    const { name, arguments: args } = params || {};
-    if (name === "sandforge_validate") {
-      const result = toolValidate();
-      return sendResult(id, {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-        isError: !result.passed,
-      });
-    }
-    if (name === "sandforge_dispatch") {
-      const result = toolDispatch(args?.useCase);
-      return sendResult(id, {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-        isError: false,
-      });
-    }
-    return sendError(id, -32601, `Unknown tool: ${name}`);
+  if (name === "sandforge_plan") {
+    const r = toolPlan(String(args.id ?? ""));
+    return text(r, Boolean(r.error));
   }
-
-  if (method === "notifications/initialized") {
-    return; // no response needed
-  }
-
-  return sendError(id, -32601, `Unknown method: ${method}`);
+  return null;
 }
+
+const respond = (id, result) => JSON.stringify({ jsonrpc: "2.0", id, result });
+const fail = (id, code, message) => JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } });
 
 // ─── Stdio loop ───────────────────────────────────────────────────────────────
 
-let buffer = "";
-process.stdin.setEncoding("utf8");
-process.stdin.on("data", (chunk) => {
-  buffer += chunk;
-  const lines = buffer.split("\n");
-  buffer = lines.pop(); // keep incomplete last line
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    try {
-      const req = JSON.parse(trimmed);
-      handleRequest(req);
-    } catch (e) {
-      send({ jsonrpc: "2.0", id: null, error: { code: -32700, message: `Parse error: ${e.message}` } });
-    }
+const rl = createInterface({ input: process.stdin });
+rl.on("line", (line) => {
+  if (!line.trim()) return;
+  let req;
+  try {
+    req = JSON.parse(line);
+  } catch (e) {
+    process.stdout.write(fail(null, -32700, `Parse error: ${e.message}`) + "\n");
+    return;
+  }
+  if (req.id === undefined || req.id === null) return; // a notification: nothing to answer
+  if (req.method === "initialize") {
+    process.stdout.write(respond(req.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "sandforge", version: VERSION } }) + "\n");
+  } else if (req.method === "tools/list") {
+    process.stdout.write(respond(req.id, { tools: TOOLS }) + "\n");
+  } else if (req.method === "tools/call") {
+    const name = req.params?.name;
+    const result = callTool(name, req.params?.arguments ?? {});
+    appendRun(`mcp:${name}`, result && !result.isError ? "pass" : "fail", name ?? "");
+    process.stdout.write((result ? respond(req.id, result) : fail(req.id, -32601, `Unknown tool: ${name}`)) + "\n");
+  } else if (req.method === "ping") {
+    process.stdout.write(respond(req.id, {}) + "\n");
+  } else {
+    process.stdout.write(fail(req.id, -32601, `Method not found: ${req.method}`) + "\n");
   }
 });
-
-process.stdin.on("end", () => process.exit(0));
+rl.on("close", () => process.exit(0));
