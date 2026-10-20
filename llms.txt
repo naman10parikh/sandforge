@@ -1,25 +1,40 @@
 # Sandforge
 
-> Provisional name (chairman confirm pending). The sandbox/infra meta-harness of the Energy fleet.
-> Owns the trust envelope: vetted compute templates + validator.
+> Sandbox templates (an E2B Firecracker microVM and a devcontainer) with a trust envelope, a validator for schema and trust rules, runtime routing, and a live E2B boot that checks the envelope holds. CLI `sandforge`, MCP server `sandforge-mcp`.
 
-## Documentation
+## Start here
 
-- [README.md](README.md): Public introduction — what Sandforge is and how to use it.
-- [CLAUDE.md](CLAUDE.md): Operating handbook — read first on every session.
-- [AGENTS.md](AGENTS.md): Repository schema and agent navigation guide.
-- [TODOS.md](TODOS.md): Work queue — open and done items.
-- [identity/SOUL.md](identity/SOUL.md): Agent identity, personality, hard boundaries.
-- [identity/MEMORY.md](identity/MEMORY.md): Bootstrap context and trust invariants.
-- [eval/run.mjs](eval/run.mjs): The validator — `node eval/run.mjs` must exit 0 before any commit.
+- [AGENTS.md](AGENTS.md): What it does, every command and MCP tool, and what not to do.
+- [README.md](README.md): Introduction, quick start and how it works.
+- [CLAUDE.md](CLAUDE.md): Operating rules for Claude Code in this repository.
+
+## Skills
+
+- [template-validate](skills/template-validate/SKILL.md): Check templates against the schema and trust rules before a commit.
+- [template-scaffold](skills/template-scaffold/SKILL.md): Add a template that starts from the strictest trust envelope.
+- [sandbox-boot](skills/sandbox-boot/SKILL.md): Boot an e2b template in a live E2B microVM and read the probes.
+
+## MCP tools and CLI
+
+- [mcp/server.mjs](mcp/server.mjs): sandforge_validate, sandforge_dispatch, sandforge_list_templates, sandforge_get_template, sandforge_plan (none boots a sandbox).
+- [bin/sandforge.mjs](bin/sandforge.mjs): list, show, validate, pick, plan, boot, recall.
+- [lib/boot.mjs](lib/boot.mjs): How a template becomes Sandbox.create options and probes.
 
 ## Templates
 
-- [templates/e2b-default/README.md](templates/e2b-default/README.md): E2B Firecracker microVM (minimal trust, ~150ms cold start).
-- [templates/devcontainer-default/README.md](templates/devcontainer-default/README.md): devcontainer for local dev + CI.
+- [templates/e2b-default/README.md](templates/e2b-default/README.md): E2B microVM, no egress; includes what the first live boot showed.
+- [templates/devcontainer-default/README.md](templates/devcontainer-default/README.md): devcontainer for local dev and CI.
+- [eval/schema/template.schema.json](eval/schema/template.schema.json): The template schema.
 
-## Notes
+## Identity and memory
 
-- This file follows the llms.txt convention (https://llmstxt.org) for LLM discovery.
-- Upstream infra spec: `energy/.claude/harnesses/INFRA-STACK.md`.
-- Energy fleet: https://github.com/naman10parikh/energy (private).
+- [identity/SOUL.md](identity/SOUL.md): Who Sandforge is, personality, hard boundaries.
+- [identity/MEMORY.md](identity/MEMORY.md): Bootstrap context and the trust envelope invariants.
+- [identity/LEARNINGS.md](identity/LEARNINGS.md): Corrections that became rules.
+- [.claude/agents/trust-auditor.md](.claude/agents/trust-auditor.md): Read-only reviewer of trust changes.
+- [.claude/agents/template-forger.md](.claude/agents/template-forger.md): Writes templates, never widens a trust envelope.
+
+## Optional
+
+- [dsip.json](dsip.json): The self-improvement contract (L2: a nightly loop proposes, a person lands).
+- [eval/golden.json](eval/golden.json): Cases the validator, router and boot plan must keep passing.

@@ -1,18 +1,29 @@
+@AGENTS.md
+
 # Sandforge — Operating Handbook
 
 > One repo = one sandbox/infra meta-harness. Sandforge owns the trust envelope.
-> See `identity/SOUL.md` for full identity and `README.md` for structure overview.
+> See `identity/SOUL.md` for full identity and `AGENTS.md` for the tools and the structure.
 
 ## What this is
 
 The sandbox/infra employee: forge vetted compute templates, maintain the trust standard,
-validate everything before it ships. Callers across the Energy fleet use these templates
-to run code safely. See `TODOS.md` for the current work queue.
+validate everything before it ships, and prove e2b templates in a live VM. Callers across the
+Energy fleet use these templates to run code safely. See `TODOS.md` for the current work queue.
 
 ## The eval gate (NON-NEGOTIABLE)
 
-`node eval/run.mjs` must exit 0 before any commit. This is the hard gate.
-If the eval is red, fix it before any other work proceeds.
+`npm test && npm run eval` must exit 0 before any commit. This is the hard gate.
+If it is red, fix it before any other work proceeds. In Claude Code the PreToolUse hook in
+`.claude/settings.json` (`hooks/template-guard.mjs`) blocks a `git commit` while any template fails.
+
+## Claude Code specifics
+
+- `.mcp.json` loads the published server through npx (safe for anyone who installs the plugin).
+  `claude --mcp-config .mcp.dev.json` loads this checkout's own server instead.
+- `E2B_API_KEY` may already be in your shell. `npm test` never boots a sandbox; a live boot needs
+  `sandforge boot <id>` or `SANDFORGE_LIVE_E2B=1 npm test`. Boot once, by hand, only when a template changed.
+- Never set a model in a sub-agent or a setting; sub-agents run on the session's model.
 
 ## Operating principles
 
@@ -26,16 +37,13 @@ If the eval is red, fix it before any other work proceeds.
    Don't widen without review. Ever.
 4. **Claim → work → close.** Every code change traces to a `[ ]` item in `TODOS.md`.
    Claim it, work it, close it with evidence (eval output). Then claim the next.
+5. **Declare what the VM shows.** Tool versions and compute in an e2b template come from a boot,
+   not from memory. Lessons go to `identity/LEARNINGS.md`.
 
 ## Commit convention
 
 `feat(templates):` · `feat(eval):` · `feat(identity):` · `docs:` · `fix:` ·
-`chore:` — so Git snap-back works per surface area.
-
-Trailer on every commit:
-```
-Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
-```
+`chore:` — so Git snap-back works per surface area. Keep the Co-Authored-By trailer your tool adds.
 
 ## Adding a new template
 
@@ -45,7 +53,8 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
 4. Add a `README.md` (copy from an existing template and adapt)
 5. If `runtime=devcontainer`, add a `devcontainer.json`
 6. Run `node eval/run.mjs` — must be green
-7. Commit: `feat(templates): add {name} template`
+7. If `runtime=e2b`, run `node bin/sandforge.mjs plan {name}`, then boot it once (the `sandbox-boot` skill)
+8. Commit: `feat(templates): add {name} template`
 
 ## Deprecating a template
 
@@ -63,9 +72,12 @@ When `energy/.claude/harnesses/INFRA-STACK.md` changes:
 3. Update `TODOS.md` with the sync date
 4. Run `node eval/run.mjs`
 
+The nightly `.github/workflows/improve.yml` watches the other upstream, the E2B SDK
+(`scripts/sdk-drift.mjs`), and opens an issue when it moves.
+
 ## Reuse (don't rebuild)
 
-- E2B SDK: `@e2b/sdk` (energy already has this)
+- E2B SDK: the `e2b` package (an optional dependency, loaded only by `lib/boot.mjs`)
 - devcontainer spec: `https://containers.dev/implementors/json_reference/`
 - Trust patterns: see `identity/MEMORY.md` §Trust envelope invariants
 - Energy fleet rules: `energy/.claude/rules/` (especially `new-service-checklist.md`)
