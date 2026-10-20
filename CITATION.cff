@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "Sandforge: Sandbox templates with a trust envelope, validated and booted in E2B."
+type: software
+authors:
+  - family-names: Parikh
+    given-names: Naman
+repository-code: "https://github.com/naman10parikh/sandforge"
+license: MIT
+version: "0.2.0"
+abstract: "Sandbox templates with a trust envelope, validated and booted in E2B."
+keywords: ["agent-native", "sandbox", "e2b", "devcontainer"]
