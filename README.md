@@ -20,7 +20,7 @@ Sandforge is an agent employee, a packaged specialist agent with its own skills,
 
 _Sandforge is part of an agent-native play for agent-native systems that can eventually be recursively self-improving and evolving, operated by agent employees._
 
-<p align="center"><img alt="Sandforge: on the command line" src="assets/terminal.svg" width="880"></p>
+<p align="center"><img alt="Sandforge: a real task, run offline" src="assets/demo.svg" width="880"></p>
 <!-- fleet:header:end -->
 
 Sandforge ships sandbox templates, an E2B Firecracker microVM and a devcontainer, and writes down each one's trust envelope: network egress, mounts, secrets, capabilities, limits and cost. It checks every template against a schema and trust rules, picks the right runtime for a task, and boots an E2B template in a live microVM to confirm that the envelope holds. It is for people and agents who run untrusted or model-written code and want the rules stated and verified.
