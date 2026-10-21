@@ -9,7 +9,7 @@
 
 The sandbox/infra employee: forge vetted compute templates, maintain the trust standard,
 validate everything before it ships, and prove e2b templates in a live VM. Callers across the
-Energy fleet use these templates to run code safely. See `TODOS.md` for the current work queue.
+Energy fleet use these templates to run code safely. The maintainer keeps the work queue outside the public repository.
 
 ## The eval gate (NON-NEGOTIABLE)
 
@@ -35,7 +35,7 @@ If it is red, fix it before any other work proceeds. In Claude Code the PreToolU
    - A `trust-gate-v{N}.md` doc in `templates/{name}/`
    - Human DRI review before merging
    Don't widen without review. Ever.
-4. **Claim → work → close.** Every code change traces to a `[ ]` item in `TODOS.md`.
+4. **Claim → work → close.** Every code change traces to a `[ ]` item in the maintainer's work queue (kept outside the public repository).
    Claim it, work it, close it with evidence (eval output). Then claim the next.
 5. **Declare what the VM shows.** Tool versions and compute in an e2b template come from a boot,
    not from memory. Lessons go to `identity/LEARNINGS.md`.
@@ -62,14 +62,14 @@ If it is red, fix it before any other work proceeds. In Claude Code the PreToolU
 2. Move the entire directory to `templates/archive/{name}/`
 3. Add a deprecation note to `README.md` with date + replacement
 4. Run `node eval/run.mjs` — archived templates are excluded from validation
-5. Document in `TODOS.md`
+5. Document it in the maintainer's work queue (kept outside the public repository)
 
 ## Upstream sync
 
 When `energy/.claude/harnesses/INFRA-STACK.md` changes:
 1. Read the diff carefully
 2. Update affected templates (additive only)
-3. Update `TODOS.md` with the sync date
+3. Record the sync date in the maintainer's work queue (kept outside the public repository)
 4. Run `node eval/run.mjs`
 
 The nightly `.github/workflows/improve.yml` watches the other upstream, the E2B SDK
