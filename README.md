@@ -5,14 +5,14 @@
 
 <p align="center">
 <a href="https://github.com/naman10parikh/sandforge/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/naman10parikh/sandforge/actions/workflows/ci.yml/badge.svg"></a>
-<a href="https://github.com/naman10parikh/sandforge/releases"><img alt="Version" src="https://img.shields.io/badge/version-0.2.0-2f5d8a?style=flat-square"></a>
+<a href="https://github.com/naman10parikh/sandforge/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/naman10parikh/sandforge?style=flat-square&amp;color=2f5d8a"></a>
 <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2f5d8a?style=flat-square"></a>
 <a href="#use-it-from-any-coding-agent"><img alt="MCP server" src="https://img.shields.io/badge/MCP-server-1e3f60?style=flat-square"></a>
 <a href="https://x.com/naman10parikh"><img alt="Follow @naman10parikh on X" src="https://img.shields.io/badge/follow-%40naman10parikh-000000?style=flat-square&amp;logo=x&amp;logoColor=white"></a>
 <a href="https://www.linkedin.com/in/naman-parikh1/"><img alt="Naman Parikh on LinkedIn" src="https://img.shields.io/badge/LinkedIn-Naman%20Parikh-0a66c2?style=flat-square"></a>
 </p>
 
-<p align="center"><a href="#quick-start">Quick start</a> · <a href="docs/README.md">How it works</a> · <a href="AGENTS.md">AGENTS.md</a> · <a href="llms.txt">llms.txt</a> · <a href="skills/">Skills</a> · <a href="https://github.com/naman10parikh/sandforge/discussions">Discussions</a> · <a href="https://github.com/naman10parikh">All projects</a></p>
+<p align="center"><a href="#quick-start">Quick start</a> · <a href="https://naman10parikh.github.io/sandforge/">Website</a> · <a href="docs/README.md">How it works</a> · <a href="AGENTS.md">AGENTS.md</a> · <a href="llms.txt">llms.txt</a> · <a href="skills/">Skills</a> · <a href="https://github.com/naman10parikh/sandforge/discussions">Discussions</a> · <a href="https://github.com/naman10parikh">All projects</a></p>
 
 **Sandbox templates with a trust envelope, validated and booted in E2B.**
 
@@ -20,7 +20,7 @@ Sandforge is an agent employee, a packaged specialist agent with its own skills,
 
 _Sandforge is part of an agent-native play for agent-native systems that can eventually be recursively self-improving and evolving, operated by agent employees._
 
-<p align="center"><img alt="Sandforge on the command line" src="assets/terminal.svg" width="880"></p>
+<p align="center"><img alt="Sandforge: on the command line" src="assets/terminal.svg" width="880"></p>
 <!-- fleet:header:end -->
 
 Sandforge ships sandbox templates, an E2B Firecracker microVM and a devcontainer, and writes down each one's trust envelope: network egress, mounts, secrets, capabilities, limits and cost. It checks every template against a schema and trust rules, picks the right runtime for a task, and boots an E2B template in a live microVM to confirm that the envelope holds. It is for people and agents who run untrusted or model-written code and want the rules stated and verified.
@@ -192,6 +192,9 @@ One of the projects by [Naman Parikh](https://github.com/naman10parikh). Each ow
 | [WikiMem](https://github.com/naman10parikh/wikimem) | Memory |
 | [Skillsmith](https://github.com/naman10parikh/skillsmith) | Skills |
 | [Agent Booster](https://github.com/naman10parikh/agent-booster) | Tools / CLIs |
+| [Hooksmith](https://github.com/naman10parikh/hooksmith) | Hooks |
+| [AgentCast](https://github.com/naman10parikh/agentcast) | Sub-agents |
+| [Plugsmith](https://github.com/naman10parikh/plugsmith) | Plugins |
 | [Armory](https://github.com/naman10parikh/armory) | MCPs and the component registry |
 | [AgentGrid](https://github.com/naman10parikh/agentgrid) | Dispatch |
 | [AgentSwarm](https://github.com/naman10parikh/agentswarm) | Dispatch |
@@ -210,4 +213,14 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md). AI-assisted pull requests are welcome. 
 ## License
 
 MIT, © 2026 Naman Parikh. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+## Star history
+
+If it is useful to you, a star helps other people find it.
+
+<a href="https://star-history.com/#naman10parikh/sandforge&Date"><picture><source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=naman10parikh/sandforge&type=Date&theme=dark"><img alt="Star history chart" src="https://api.star-history.com/svg?repos=naman10parikh/sandforge&type=Date" width="640"></picture></a>
+
+## Contributors
+
+<a href="https://github.com/naman10parikh/sandforge/graphs/contributors"><img alt="Contributors" src="https://contrib.rocks/image?repo=naman10parikh/sandforge"></a>
 <!-- fleet:footer:end -->
